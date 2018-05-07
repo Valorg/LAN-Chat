@@ -1,7 +1,6 @@
 #pragma once
 #include "IPpool.h"
-#include "GetLocalIP.h"
-#include <pcap.h>
+#include "Global.h"
 
 class Listener
 {
@@ -9,10 +8,7 @@ private:
 	pcap_if_t * alldevs, *d;
 	u_int i = 0;
 	char errbuf[PCAP_ERRBUF_SIZE];
-	short LocalIP;
 	int res;
-	bpf_u_int32 mask;
-	bpf_u_int32 net;
 public:
 	int FindAndPrint() {
 		/* The user didn't provide a packet source: Retrieve the local device list */
@@ -71,10 +67,11 @@ public:
 		return fp;
 	}
 
-	void Listen(pcap_t *fp) {
+	void Listen(pcap_t *fp, short inum) {
 		struct pcap_pkthdr *header;
+		std::array<u_char, 4> IpBuf;
+		std::array<u_char, 4> ILocalIP = GetIP().at(inum-1);
 		const u_char *pkt_data;
-		LocalIP = GetIP();
 		while ((res = pcap_next_ex(fp, &header, &pkt_data)) >= 0){
 			if (res == 0)
 				continue;
@@ -82,28 +79,31 @@ public:
 
 
 			if (pkt_data[23] == 0x01 /*ICMP*/ &&
-				pkt_data[34] == 0x08 /*request*/){
+				pkt_data[34] == 0x08 /*request*/) {
 
 				g_mt.lock();
-				short gg = (short)pkt_data[33];
-				g_IPpool.insert(gg);
+				IpBuf[0] = pkt_data[26];
+				IpBuf[1] = pkt_data[27];
+				IpBuf[2] = pkt_data[28];
+				IpBuf[3] = pkt_data[29];
+				g_IPpool.insert(IpBuf);
 				g_mt.unlock();
-				if((short)pkt_data[33] == LocalIP &&
-					(short)pkt_data[29] != LocalIP){
+				if (IpBuf != ILocalIP){
 
 					for (int i = 26; i < 30; i++) {
-						cout << (int)pkt_data[i];
+						std::cout << (int)pkt_data[i];
 						if (i != 29)
-							cout << ".";
+							std::cout << ".";
 					}
 
-					cout << " : ";
+					std::cout << " : ";
 
 					for (int i = 42; i < header->len; i++) {
-						cout << pkt_data[i];
+						std::cout << pkt_data[i];
 					}
-					cout << endl; 
-					}
+					std::cout << std::endl;
+				}
+		
 			}
 		}
 	}
