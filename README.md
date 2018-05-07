@@ -8,4 +8,4 @@ At startup, prompts you to select a network. Then tries to ping all addresses fr
 * boost::asio (sending ICMP messages)
 * winPcap (message interception, ICMP messages of type Request do not arrive at the socket, they can be intercepted by a packet sniffer)
 
-[Download](https://github.com/Valorg/LAN_Chat/blob/master/Debug/ICMP%20LAN%20Chat.exe)
+[Download](https://github.com/Valorg/LAN-Chat/tree/master/Debug)
